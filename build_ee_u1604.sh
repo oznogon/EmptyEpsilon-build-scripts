@@ -15,7 +15,7 @@ EE_BUILD_CMAKE="${EE_BUILD_EE_PATH}/cmake"
 # Update system and install tools.
 if [ ! -d "${EE_BUILD_MINGW_LIBPATH}" ]; then
   echo "Installing tools..."
-  sudo apt update && sudo apt -y install wget cmake build-essential git libgl1-mesa-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libopenal-dev libxcb1-dev libxcb-image0-dev libudev-dev libflac-dev libvorbis-dev unzip zip mingw-w64
+  sudo apt update && sudo apt -y install wget cmake build-essential git python-minimal libgl1-mesa-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libopenal-dev libxcb1-dev libxcb-image0-dev libudev-dev libflac-dev libvorbis-dev unzip zip mingw-w64
   ## Find a better way to get the mingw path!
   sudo updatedb
   EE_BUILD_MINGW_LIBPATH="$(dirname $(locate libgcc.a | grep win32 | grep i686))"
