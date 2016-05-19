@@ -7,8 +7,8 @@ EE_BUILD_SFML_PATH="${EE_BUILD_HOME}/SFML-${EE_BUILD_SFML_VERSION}"
 EE_BUILD_DRMINGW_VERSION="0.8" # Unused; we build from master.
 EE_BUILD_DRMINGW_PATH="${EE_BUILD_HOME}/drmingw"
 EE_BUILD_ZIP_PATH="${EE_BUILD_HOME}/EE_ZIP"
-EE_BUILD_MINGW_LIBPATH="$(dirname $(locate libgcc.a | grep win32 | grep i686))"
-EE_BUILD_MINGW_USRPATH="$(dirname $(locate libwinpthread-1.dll | grep i686))"
+EE_BUILD_MINGW_LIBPATH="$(dirname $(locate libgcc.a | grep win32 | grep i686) 2> /dev/null)"
+EE_BUILD_MINGW_USRPATH="$(dirname $(locate libwinpthread-1.dll | grep i686) 2> /dev/null)"
 EE_BUILD_DATE="$(date +'%Y%m%d')"
 EE_BUILD_CMAKE="${EE_BUILD_EE_PATH}/cmake"
 
@@ -16,6 +16,10 @@ EE_BUILD_CMAKE="${EE_BUILD_EE_PATH}/cmake"
 if [ ! -d "${EE_BUILD_MINGW_LIBPATH}" ]; then
   echo "Installing tools..."
   sudo apt update && sudo apt -y install wget cmake build-essential git libgl1-mesa-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libopenal-dev libxcb1-dev libxcb-image0-dev libudev-dev libflac-dev libvorbis-dev unzip zip mingw-w64
+  ## Find a better way to get the mingw path!
+  sudo updatedb
+  EE_BUILD_MINGW_LIBPATH="$(dirname $(locate libgcc.a | grep win32 | grep i686))"
+  EE_BUILD_MINGW_USRPATH="$(dirname $(locate libwinpthread-1.dll | grep i686))"
   echo
 fi
 
