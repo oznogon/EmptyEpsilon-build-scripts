@@ -12,6 +12,10 @@ EE_BUILD_MINGW_USRPATH="$(dirname $(locate libwinpthread-1.dll | grep i686) 2> /
 EE_BUILD_DATE="$(date +'%Y%m%d')"
 EE_BUILD_CMAKE="${EE_BUILD_EE_PATH}/cmake"
 
+
+#fix build error for the drmingw toolchain
+sudo ln -sfn /usr/bin/python3.5 /usr/bin/python
+
 # Update system and install tools.
 if [ ! -d "${EE_BUILD_MINGW_LIBPATH}" ]; then
   echo "Installing tools..."
