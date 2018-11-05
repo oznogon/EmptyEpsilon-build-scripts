@@ -15,10 +15,9 @@ EE_BUILD_CMAKE="${EE_BUILD_EE_PATH}/cmake"
 #make sure the system is updated. 
 sudo apt-get update && sudo apt-get -y upgrade
 
-#fix build error for the drmingw toolchain
-sudo ln -sfn /usr/bin/python3.6 /usr/bin/python
 
 
+set -e
 
 # Update system and install tools.
 if [ ! -d "${EE_BUILD_MINGW_LIBPATH}" ]; then
@@ -30,6 +29,15 @@ if [ ! -d "${EE_BUILD_MINGW_LIBPATH}" ]; then
   EE_BUILD_MINGW_USRPATH="$(dirname $(locate libwinpthread-1.dll | grep i686))"
   echo
 fi
+
+#fix build error for the drmingw toolchain
+sudo apt purge -y python2.7-minimal
+
+sudo rm -f /usr/bin/python
+sudo ln -sfn /usr/bin/python3.6 /usr/bin/python
+alias python='python3.6' 
+
+
 
 # Clone repos.
 echo "Cloning or updating git repos..."
@@ -55,7 +63,7 @@ else
 fi
 echo
 
-## Get SFML 2.3.x.
+## Get SFML 
 if [ ! -d "${EE_BUILD_SFML_PATH}" ]; then
   echo "-   Cloning SFML repo to ${EE_BUILD_SFML_PATH}..."
   git clone https://github.com/SFML/SFML.git -b "${EE_BUILD_SFML_VERSION}.x" "${EE_BUILD_SFML_PATH}"
@@ -91,10 +99,10 @@ echo
 echo "Building SFML for Linux..."
 cd "${EE_BUILD_SFML_PATH}"
 ### Apply patch for 16.04 until SFML fixes its CMakeLists or Ubuntu fixes GCC.
-if [ ! -f 3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch ]; then
-  wget --no-clobber http://web.archive.org/web/20160509014317/https://gitlab.peach-bun.com/pinion/SFML/commit/3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch &&
-  git apply 3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch
-fi
+#if [ ! -f 3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch ]; then
+#  wget --no-clobber http://web.archive.org/web/20160509014317/https://gitlab.peach-bun.com/pinion/SFML/commit/3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch &&
+#  git apply 3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch
+#fi
 if [ ! -d lin32 ]; then
   mkdir lin32
 fi
@@ -219,8 +227,8 @@ if [ -d /vagrant ]; then
   cp "${EE_BUILD_ZIP_FILE}" /vagrant
   cd "${EE_BUILD_HOME}"
 
-  echo "Changing owner of all files in the buildhome directory to vagrant in case we need to interactively work with these files."
-  chown -R vagrant:vagrant "${EE_BUILD_HOME}"
+#  echo "Changing owner of all files in the buildhome directory to vagrant in case we need to interactively work with these files."
+#  chown -R vagrant:vagrant "${EE_BUILD_HOME}"
   echo "EmptyEpsilon built to /vagrant/${EE_BUILD_ZIP_FILE}."
 ## Otherwise, just say we're done.
 else
