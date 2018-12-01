@@ -184,7 +184,7 @@ echo
 
 ## Copy game content into the distribution directory.
 echo "Copying folders..."
-cp -rv "${EE_BUILD_EE_PATH}/packs" "${EE_BUILD_EE_PATH}/scripts" "${EE_BUILD_EE_PATH}/resources" "${EE_BUILD_ZIP_PATH}/EmptyEpsilon"
+cp -rv "${EE_BUILD_EE_PATH}/packs" "${EE_BUILD_EE_PATH}/scripts" "${EE_BUILD_EE_PATH}/resources" "${EE_BUILD_EE_PATH}/www" "${EE_BUILD_ZIP_PATH}/EmptyEpsilon"
 echo
 
 echo "Copying binaries..."
