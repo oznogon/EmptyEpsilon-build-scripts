@@ -10,6 +10,7 @@ export ETH=$(ip link | grep UP | grep -v LOOPBACK | awk '{print $2}' | rev | cut
 #the first 3 octets of the /24 network
 export NETWORK=10.16.0.
 # Install packages that we need on the host system to install our PXE environment, which includes dnsmasq as a dhcp-server and tftp-server and nfs for the network files system.
+apt-get update
 apt-get -y install debootstrap zip coreutils util-linux e2fsprogs dnsmasq nfs-common nfs-kernel-server
 
 mkdir -p ${TARGET_NFS_DIR}
@@ -107,8 +108,20 @@ ln -s ${TARGET_TFTP_DIR}/initrd.img ${TARGET_TFTP_DIR}/efi64/initrd.img
 # Setup vmlinuz.img kernel in ${TARGET_TFTP_DIR}
 chroot ${TARGET_NFS_DIR} apt-get update
 #chroot ${TARGET_NFS_DIR} apt-get -y install linux-image-686-pae firmware-linux-nonfree
-chroot ${TARGET_NFS_DIR} apt-get -y install linux-image-generic
+chroot ${TARGET_NFS_DIR} bash -c 'export DEBIAN_FRONTEND=noninteractive; export UCF_FORCE_CONFFNEW=YES;apt-get -y -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" install linux-image-generic'
 cp ${TARGET_NFS_DIR}/boot/vmlinuz* ${TARGET_TFTP_DIR}/vmlinuz.img
 cp ${TARGET_NFS_DIR}/boot/initrd.img* ${TARGET_TFTP_DIR}/initrd.img
 chmod 644 ${TARGET_TFTP_DIR}/vmlinuz.img
 chmod 644 ${TARGET_TFTP_DIR}/initrd.img
+
+# unount for tar
+umount ${TARGET_NFS_DIR}/proc
+umount ${TARGET_NFS_DIR}/sys
+umount ${TARGET_NFS_DIR}/dev
+umount ${TARGET_NFS_DIR}/tmp
+
+#tar up srv
+tar -cvaf /vagrant/pxe.tar /srv/
+
+gzip -9 /vagrant/pxe.tar
+
