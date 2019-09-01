@@ -3,3 +3,5 @@
 *.log
 .vagrant
 *.ini
+*.bz2
+ssh

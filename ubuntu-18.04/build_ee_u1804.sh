@@ -2,7 +2,7 @@
 EE_BUILD_HOME=`pwd`
 EE_BUILD_EE_PATH="${EE_BUILD_HOME}/EmptyEpsilon"
 EE_BUILD_SP_PATH="${EE_BUILD_HOME}/SeriousProton"
-EE_BUILD_SFML_VERSION="2.5"
+EE_BUILD_SFML_VERSION="2.4"
 EE_BUILD_SFML_PATH="${EE_BUILD_HOME}/SFML-${EE_BUILD_SFML_VERSION}"
 EE_BUILD_DRMINGW_VERSION="0.8" # Unused; we build from master.
 EE_BUILD_DRMINGW_PATH="${EE_BUILD_HOME}/drmingw"
@@ -111,14 +111,14 @@ cmake .. && make && sudo make install
 echo
 
 ## Build SFML for Windows.
-echo "Building SFML for Windows..."
-cd "${EE_BUILD_SFML_PATH}"
-if [ ! -d win32 ]; then
-  mkdir win32
-fi
-cd win32
+#echo "Building SFML for Windows..."
+#cd "${EE_BUILD_SFML_PATH}"
+#if [ ! -d win32 ]; then
+#  mkdir win32
+#fi
+#cd win32
 ### Use the CMake toolchain from EE to make it easier to compile for Windows.
-cmake -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" -DOPENAL_LIBRARY="${EE_BUILD_SFML_PATH}/extlibs/bin/x86/openal32.dll" ..
+
 make
 echo
 

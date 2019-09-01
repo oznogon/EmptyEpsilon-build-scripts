@@ -114,6 +114,135 @@ cp ${TARGET_NFS_DIR}/boot/initrd.img* ${TARGET_TFTP_DIR}/initrd.img
 chmod 644 ${TARGET_TFTP_DIR}/vmlinuz.img
 chmod 644 ${TARGET_TFTP_DIR}/initrd.img
 
+
+# Disable some services to decrease boot time
+chroot ${TARGET_NFS_DIR} systemctl disable rsyslog
+
+
+# Install tools in NFS root required to build EE.
+chroot ${TARGET_NFS_DIR} apt-get update
+chroot ${TARGET_NFS_DIR} apt-get -y install git mesa-utils rxvt build-essential libx11-dev cmake libxrandr-dev mesa-common-dev libglu1-mesa-dev libudev-dev libglew-dev libjpeg-dev libfreetype6-dev libopenal-dev libsndfile1-dev libxcb1-dev libxcb-image0-dev
+# Install basic X setup in NFS root to allow us to run EE later on.
+chroot ${TARGET_NFS_DIR} apt-get -y install xserver-xorg-core xserver-xorg-video-amdgpu  xserver-xorg-input-all  xinit alsa-base alsa-utils
+
+# Download&install SFML,EE,SP (This takes a while)
+chroot ${TARGET_NFS_DIR} git clone https://github.com/daid/EmptyEpsilon.git /root/EmptyEpsilon
+chroot ${TARGET_NFS_DIR} git clone https://github.com/daid/SeriousProton.git /root/SeriousProton
+#wget http://www.sfml-dev.org/files/SFML-2.3.2-sources.zip -O ${TARGET_NFS_DIR}/root/SFML-2.3.2-sources.zip
+#unzip ${TARGET_NFS_DIR}/root/SFML-2.3.2-sources.zip -d ${TARGET_NFS_DIR}/root/
+chroot ${TARGET_NFS_DIR} git clone https://github.com/SFML/SFML.git -b "2.5.x" "/root/SFML"
+chroot ${TARGET_NFS_DIR} sh -c 'cd /root/SFML && cmake . && make -j 3 && make install && ldconfig'
+mkdir -p ${TARGET_NFS_DIR}/root/EmptyEpsilon/_build
+chroot ${TARGET_NFS_DIR} sh -c 'cd /root/EmptyEpsilon/_build && cmake .. -DSERIOUS_PROTON_DIR=/root/SeriousProton/ && make -j 3'
+# Create a symlink for the final executable.
+chroot ${TARGET_NFS_DIR} ln -s _build/EmptyEpsilon /root/EmptyEpsilon/EmptyEpsilon
+# Create a symlink to store the options.ini file in /tmp/, this so the client can load a custom file.
+chroot ${TARGET_NFS_DIR} ln -s /tmp/options.ini /root/EmptyEpsilon/options.ini
+
+cat > ${TARGET_NFS_DIR}/root/setup_option_file.sh <<-EOT
+#!/bin/sh
+MAC=\$(cat /sys/class/net/*/address | grep -v 00\:00\:00 | sed 's/://g')
+if [ -e /root/configs/\${MAC}.ini ]; then
+    cp /root/configs/\${MAC}.ini /tmp/options.ini
+else
+    echo "instance_name=\${MAC}" > /tmp/options.ini
+fi
+EOT
+chmod +x ${TARGET_NFS_DIR}/root/setup_option_file.sh
+
+#create eescript
+cat > ${TARGET_NFS_DIR}/root/setup_option_file.sh <<-EOT
+#!/bin/sh
+MAC=\$(cat /sys/class/net/*/address | grep -v 00\:00\:00 | sed 's/://g')
+if [ -e /root/configs/\${MAC}.ini ]; then
+    cp /root/configs/\${MAC}.ini /tmp/options.ini
+else
+    echo "instance_name=\${MAC}" > /tmp/options.ini
+fi
+EOT
+chmod +x ${TARGET_NFS_DIR}/root/setup_option_file.sh
+
+# Create an install a systemd unit that runs EE.
+cat > ${TARGET_NFS_DIR}/etc/systemd/system/emptyepsilon.service <<-EOT
+[Unit]
+Description=EmptyEpsilon
+
+[Service]
+Environment=XAUTHORITY=/tmp/.xauthority
+TimeoutStartSec=0
+WorkingDirectory=/root/EmptyEpsilon
+ExecStartPre=/root/setup_option_file.sh
+ExecStart=/usr/bin/startx /root/EmptyEpsilon/EmptyEpsilon.sh -- -logfile /tmp/x.log
+
+[Install]
+WantedBy=multi-user.target
+EOT
+chroot ${TARGET_NFS_DIR} systemctl enable emptyepsilon.service
+
+
+# Disable screen standby/blanking
+cat > ${TARGET_NFS_DIR}/etc/X11/xorg.conf <<-EOT
+Section "Monitor"
+    Identifier "LVDS0"
+    Option "DPMS" "false"
+EndSection
+
+Section "ServerLayout"
+    Identifier "ServerLayout0"
+    Option "StandbyTime" "0"
+    Option "SuspendTime" "0"
+    Option "OffTime"     "0"
+    Option "BlankTime"   "0"
+EndSection
+EOT
+
+# Instead of running a login shell on tty1, run a normal shell so we do not have to login with a username/password are just root. Who cares, we are on a read only system.
+cat > ${TARGET_NFS_DIR}/etc/systemd/system/shell_on_tty.service <<-EOT
+[Unit]
+Description=Shell on TTY1
+After=getty.target
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+RemainAfterExit=yes
+ExecStart=/bin/bash
+TimeoutStopSec=1
+StandardInput=tty-force
+StandardOutput=inherit
+StandardError=inherit
+
+[Install]
+WantedBy=graphical.target
+EOT
+chroot ${TARGET_NFS_DIR} systemctl enable shell_on_tty.service
+cp /vagrant/artemis.zip ${TARGET_NFS_DIR}/root/
+cd ${TARGET_NFS_DIR}/root/
+unzip artemis.zip
+
+# Install the ssh server on the netboot systems, so we can remotely access them, setup a private key on the server and put the public on as authorized key in the netboot system.
+# Also install avahi for easier server discovery.
+chroot ${TARGET_NFS_DIR} apt-get install -y twm openssh-server x11-xserver-utils wine32 avahi-daemon avahi-utils libnss-mdns
+chroot ${TARGET_NFS_DIR} apt-get clean
+echo "PermitRootLogin yes" >> ${TARGET_NFS_DIR}/etc/ssh/sshd_config
+if [[ ! -e $HOME/.ssh/id_rsa ]]; then
+    ssh-keygen -t rsa -f $HOME/.ssh/id_rsa -N ''
+fi
+mkdir -p ${TARGET_NFS_DIR}/root/.ssh/
+cp $HOME/.ssh/id_rsa.pub ${TARGET_NFS_DIR}/root/.ssh/authorized_keys
+cat > ${TARGET_NFS_DIR}/etc/avahi/services/ee.service <<-EOT
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name replace-wildcards="yes">EmptyEpsilon on %h</name>
+  <service>
+    <type>_emptyepsilon._tcp</type>
+    <port>22</port>
+  </service>
+</service-group>
+EOT
+
+
 # unount for tar
 umount ${TARGET_NFS_DIR}/proc
 umount ${TARGET_NFS_DIR}/sys
@@ -121,7 +250,7 @@ umount ${TARGET_NFS_DIR}/dev
 umount ${TARGET_NFS_DIR}/tmp
 
 #tar up srv
-tar -cvaf /vagrant/pxe.tar /srv/
+tar -cjvaf /vagrant/pxe.tar.bz2 /srv/
 
-gzip -9 /vagrant/pxe.tar
+#gzip -9 /vagrant/pxe.tar
 
