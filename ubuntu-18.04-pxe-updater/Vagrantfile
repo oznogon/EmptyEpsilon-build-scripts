@@ -15,10 +15,13 @@ Vagrant.configure(2) do |config|
     vb.memory = 4096
   config.vm.provision "build",
     type: "shell", 
+    path: "vagrant-provision.sh", 
+    privileged: true
+  config.vm.provision "update",
+    type: "shell", 
     path: "update_pxe_ee_u1804.sh", 
     run: 'always', 
-    privileged: true
-   
+    privileged: true 
   end
 
   config.vm.hostname = "bridgesim-ee"
