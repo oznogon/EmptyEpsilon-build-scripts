@@ -46,5 +46,8 @@ tar -cjvaf /vagrant/pxe.tar.bz2 /srv/
 
 #gzip -9 /vagrant/pxe.tar
 
-mkdir ~/.ssh
 cp /vagrant/ssh/* ~/.ssh
+
+ssh 10.16.0.2 -C rm -f /home/pi/pxe.tar.bz2
+scp /vagrant/pxe.tar.bz2 10.16.0.2:/home/pi/
+ssh 10.16.0.2 -C /root/update.sh

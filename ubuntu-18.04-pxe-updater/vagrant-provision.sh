@@ -138,16 +138,6 @@ chroot ${TARGET_NFS_DIR} ln -s _build/EmptyEpsilon /root/EmptyEpsilon/EmptyEpsil
 # Create a symlink to store the options.ini file in /tmp/, this so the client can load a custom file.
 chroot ${TARGET_NFS_DIR} ln -s /tmp/options.ini /root/EmptyEpsilon/options.ini
 
-cat > ${TARGET_NFS_DIR}/root/setup_option_file.sh <<-EOT
-#!/bin/sh
-MAC=\$(cat /sys/class/net/*/address | grep -v 00\:00\:00 | sed 's/://g')
-if [ -e /root/configs/\${MAC}.ini ]; then
-    cp /root/configs/\${MAC}.ini /tmp/options.ini
-else
-    echo "instance_name=\${MAC}" > /tmp/options.ini
-fi
-EOT
-chmod +x ${TARGET_NFS_DIR}/root/setup_option_file.sh
 
 #create eescript
 cat > ${TARGET_NFS_DIR}/root/setup_option_file.sh <<-EOT
@@ -171,7 +161,7 @@ Environment=XAUTHORITY=/tmp/.xauthority
 TimeoutStartSec=0
 WorkingDirectory=/root/EmptyEpsilon
 ExecStartPre=/root/setup_option_file.sh
-ExecStart=/usr/bin/startx /root/EmptyEpsilon/EmptyEpsilon.sh -- -logfile /tmp/x.log
+ExecStart=/usr/bin/startx /root/EmptyEpsilon/EmptyEpsilon -- -logfile /tmp/x.log
 
 [Install]
 WantedBy=multi-user.target
