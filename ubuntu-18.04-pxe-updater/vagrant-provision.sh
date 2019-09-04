@@ -230,6 +230,7 @@ cat > ${TARGET_NFS_DIR}/etc/avahi/services/ee.service <<-EOT
   </service>
 </service-group>
 EOT
+mkdir /srv/nfsroot/root/configs
 
 # unount for next script
 umount ${TARGET_NFS_DIR}/proc

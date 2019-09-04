@@ -42,12 +42,14 @@ umount ${TARGET_NFS_DIR}/dev
 umount ${TARGET_NFS_DIR}/tmp
 
 #tar up srv
-tar -cjvaf /vagrant/pxe.tar.bz2 /srv/
+#tar -cjvaf /vagrant/pxe.tar.bz2 /srv/
 
 #gzip -9 /vagrant/pxe.tar
 
 cp /vagrant/ssh/* ~/.ssh
 
-ssh 10.16.0.2 -C rm -f /home/pi/pxe.tar.bz2
-scp /vagrant/pxe.tar.bz2 10.16.0.2:/home/pi/
-ssh 10.16.0.2 -C /root/update.sh
+#ssh 10.16.0.2 -C rm -f /home/pi/pxe.tar.bz2
+#scp /vagrant/pxe.tar.bz2 10.16.0.2:/home/pi/
+#ssh 10.16.0.2 -C /root/update.sh
+
+rsync -avrz --progress -e ssh /srv/* 10.16.0.2:/srv/
