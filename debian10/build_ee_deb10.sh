@@ -77,4 +77,4 @@ make -j 3 package
 echo
 # Build EmptyEpsilon.
 
-cp *.zip /vagrant/
+sudo cp *.zip /vagrant/
