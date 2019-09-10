@@ -16,7 +16,7 @@ set -e
 # Update system and install tools.
 if [ ! -d "${EE_BUILD_MINGW_LIBPATH}" ]; then
   echo "Installing tools..."
-  sudo apt update && sudo apt -y install wget cmake build-essential git python-minimal unzip zip mingw-w64
+  sudo apt update && sudo apt -y install wget cmake build-essential git python-minimal unzip zip mingw-w64 p7zip-full
   echo
 fi
 
