@@ -1,224 +1,191 @@
 #!/bin/bash
+SFML_ROOT="/usr/local/lib"
+SFML_INCLUDE_DIR="/usr/local/include/SFML"
 EE_BUILD_HOME=`pwd`
-EE_BUILD_EE_PATH="${EE_BUILD_HOME}/EmptyEpsilon"
-EE_BUILD_SP_PATH="${EE_BUILD_HOME}/SeriousProton"
-EE_BUILD_SFML_VERSION="2.4"
-EE_BUILD_SFML_PATH="${EE_BUILD_HOME}/SFML-${EE_BUILD_SFML_VERSION}"
-EE_BUILD_DRMINGW_VERSION="0.8" # Unused; we build from master.
-EE_BUILD_DRMINGW_PATH="${EE_BUILD_HOME}/drmingw"
-EE_BUILD_ZIP_PATH="${EE_BUILD_HOME}/EE_ZIP"
-EE_BUILD_MINGW_LIBPATH="$(dirname $(locate libgcc.a | grep win32 | grep i686) 2> /dev/null)"
-EE_BUILD_MINGW_USRPATH="$(dirname $(locate libwinpthread-1.dll | grep i686) 2> /dev/null)"
+EE_BUILD_SFML="${EE_BUILD_HOME}/SFML"
+EE_BUILD_EE="${EE_BUILD_HOME}/EmptyEpsilon"
+EE_BUILD_EE_WIN32="${EE_BUILD_EE}/_build_win32"
+EE_BUILD_EE_LINUX="${EE_BUILD_EE}/_build_linux"
+EE_BUILD_EE_ANDROID="${EE_BUILD_EE}/_build_android"
+EE_BUILD_EE_ANDROID_KEYSTORE="$HOME/.keystore"
+EE_BUILD_EE_ANDROID_KEYSTORE_ALIAS="Android"
+EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD="password"
+EE_BUILD_SP="${EE_BUILD_HOME}/SeriousProton"
 EE_BUILD_DATE="$(date +'%Y%m%d')"
-EE_BUILD_CMAKE="${EE_BUILD_EE_PATH}/cmake"
+EE_BUILD_EE_CMAKE="${EE_BUILD_EE}/cmake"
+EE_BUILD_CMAKE_VERSION="3.16.4"
+EE_BUILD_CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v${EE_BUILD_CMAKE_VERSION}/cmake-${EE_BUILD_CMAKE_VERSION}-Linux-x86_64.tar.gz"
+EE_BUILD_CMAKE_BIN="${EE_BUILD_HOME}/cmake-${EE_BUILD_CMAKE_VERSION}-Linux-x86_64/bin/cmake"
+EE_BUILD_MAKE_BIN="/usr/bin/make"
 
+set -e
 
-#fix build error for the drmingw toolchain
-sudo ln -sfn /usr/bin/python3.5 /usr/bin/python
-
-# Update system and install tools.
-if [ ! -d "${EE_BUILD_MINGW_LIBPATH}" ]; then
-  echo "Installing tools..."
-  sudo apt update && sudo apt -y install wget cmake build-essential git python-minimal libgl1-mesa-dev libxrandr-dev libfreetype6-dev libglew-dev libjpeg-dev libopenal-dev libxcb1-dev libxcb-image0-dev libudev-dev libflac-dev libvorbis-dev unzip zip mingw-w64
-  ## Find a better way to get the mingw path!
-  sudo updatedb
-  EE_BUILD_MINGW_LIBPATH="$(dirname $(locate libgcc.a | grep win32 | grep i686))"
-  EE_BUILD_MINGW_USRPATH="$(dirname $(locate libwinpthread-1.dll | grep i686))"
-  echo
+# Require an argument
+if [ "$#" == "0" ]
+then
+  echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
+  exit 1
 fi
 
-# Clone repos.
-echo "Cloning or updating git repos..."
+# Update the system if it hasn't been in the last 12 hours.
+if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -720)" ]
+then
+  echo "Updating system..."
+  sudo apt-get update &&
+    sudo apt-get -y upgrade &&
+    echo "!   System updated."
+fi
 
-## Get SeriousProton and EmptyEpsilon.
-if [ ! -d "${EE_BUILD_SP_PATH}" ]; then
-  echo "-   Cloning SeriousProton repo to ${EE_BUILD_SP_PATH}..."
-  git clone https://github.com/daid/SeriousProton.git "${EE_BUILD_SP_PATH}"
+# Install tools.
+echo "Installing tools..."
+sudo apt -y install git build-essential libx11-dev \
+  libxrandr-dev mesa-common-dev libglu1-mesa-dev \
+  libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
+  libopenal-dev libsndfile1-dev libxcb1-dev \
+  libxcb-image0-dev mingw-w64 cmake gcc g++ zip \
+  unzip p7zip-full python3-minimal openjdk-8-jdk && # cmake libsfml-dev
+  echo "!   Tools installed."
+
+# Get CMake.
+if [ ! -f "${EE_BUILD_CMAKE_BIN}" ]
+then
+  echo "Downloading CMake ${EE_BUILD_CMAKE_VERSION}..."
+  wget "${EE_BUILD_CMAKE_URL}" &&
+    tar zxf cmake*.tar.gz &&
+    echo "!   CMake downloaded."
 else
-  echo "-   Fetching and merging SeriousProton repo at ${EE_BUILD_SP_PATH}..."
-  ( cd "${EE_BUILD_SP_PATH}";
-    git fetch --all && git merge --ff-only; )
+  echo "!   CMake already present."
 fi
-echo
 
-if [ ! -d "${EE_BUILD_EE_PATH}" ]; then
-  echo "-   Cloning EmptyEpsilon repo to ${EE_BUILD_EE_PATH}..."
-  git clone https://github.com/daid/EmptyEpsilon.git "${EE_BUILD_EE_PATH}"
+# Get SFML.
+if [ ! -d "${EE_BUILD_SFML}" ]
+then
+  echo "Cloning SFML repo to ${EE_BUILD_SFML}..."
+  git clone https://github.com/SFML/SFML.git "${EE_BUILD_SFML}" &&
+  echo "!   SFML source cloned."
 else
-  echo "-   Fetching and merging EmptyEpsilon repo at ${EE_BUILD_EE_PATH}..."
-  ( cd "${EE_BUILD_EE_PATH}";
-    git fetch --all && git merge --ff-only; )
+  echo "Fetching and fast-forwarding SFML repo at ${EE_BUILD_SFML}..."
+  ( cd "${EE_BUILD_SFML}" &&
+    git fetch --all && git merge --ff-only &&
+    echo "!   SFML source is up to date." )
 fi
-echo
 
-## Get SFML 2.3.x.
-if [ ! -d "${EE_BUILD_SFML_PATH}" ]; then
-  echo "-   Cloning SFML repo to ${EE_BUILD_SFML_PATH}..."
-  git clone https://github.com/SFML/SFML.git -b "${EE_BUILD_SFML_VERSION}.x" "${EE_BUILD_SFML_PATH}"
+# Get SeriousProton and EmptyEpsilon.
+if [ ! -d "${EE_BUILD_SP}" ]
+then
+  echo "Cloning SeriousProton repo to ${EE_BUILD_SP}..."
+  git clone https://github.com/daid/SeriousProton.git "${EE_BUILD_SP}" &&
+  echo "!   SeriousProton source cloned."
 else
-  echo "-   Fetching and merging SFML repo at ${EE_BUILD_SFML_PATH}..."
-  ( cd "${EE_BUILD_SFML_PATH}";
-    git fetch --all && git merge --ff-only; )
+  echo "Fetching and fast-forwarding SeriousProton repo at ${EE_BUILD_SP}..."
+  ( cd "${EE_BUILD_SP}" &&
+    git fetch --all && git merge --ff-only &&
+    echo "!   SeriousProton source is up to date." )
 fi
-echo
 
-## Get DRMingW for debugging Windows builds.
-if [ ! -d "${EE_BUILD_DRMINGW_PATH}" ]; then
-  echo "-   Cloning DrMingW repo to ${EE_BUILD_DRMINGW_PATH}..."
-  git clone https://github.com/jrfonseca/drmingw.git "${EE_BUILD_DRMINGW_PATH}"
+if [ ! -d "${EE_BUILD_EE}" ]
+then
+  echo "Cloning EmptyEpsilon repo to ${EE_BUILD_EE}..."
+  git clone https://github.com/daid/EmptyEpsilon.git "${EE_BUILD_EE}" &&
+  echo "!   EmptyEpsilon source cloned."
 else
-  echo "-   Fetching and merging DrMingW repo at ${EE_BUILD_DRMINGW_PATH}..."
-  ( cd "${EE_BUILD_DRMINGW_PATH}";
-    git fetch --all && git merge --ff-only; )
+  echo "Fetching and fast-forwarding EmptyEpsilon repo at ${EE_BUILD_EE}..."
+  ( cd "${EE_BUILD_EE}" &&
+    git fetch --all && git merge --ff-only &&
+    echo "!   EmptyEpsilon source is up to date." )
 fi
-echo
 
-## Write commit IDs for each repo into a file for reference.
-for i in "${EE_BUILD_SP_PATH}" "${EE_BUILD_EE_PATH}" "${EE_BUILD_SFML_PATH}" "${EE_BUILD_DRMINGW_PATH}"
-do (
-  cd "${i}";
-  echo "$(git log --pretty='oneline' -n 1)" > "${i}/commit.log";
-); done
-echo
+# Write commit IDs for each repo into a file for reference.
+echo "Saving commit IDs..."
+for i in "${EE_BUILD_SP}" "${EE_BUILD_EE}" "${EE_BUILD_SFML}"
+do
+  ( cd "${i}" &&
+    echo "-   $(git log --pretty='oneline' -n 1)" )
+done
 
-# Build the prerequisites.
+# Build SFML.
+echo "Building SFML..."
+( cd "${EE_BUILD_SFML}" &&
+  mkdir -p "${EE_BUILD_SFML}/_build" &&
+  cd "${EE_BUILD_SFML}/_build" &&
+  cmake "${EE_BUILD_SFML}" &&
+  make &&
+  echo "!   SFML built." &&
+  sudo make install &&
+  echo "!   SFML installed." &&
+  sudo ldconfig &&
+  echo "!   SFML libraries linked." )
 
-## Build SFML for Linux.
-echo "Building SFML for Linux..."
-cd "${EE_BUILD_SFML_PATH}"
-### Apply patch for 16.04 until SFML fixes its CMakeLists or Ubuntu fixes GCC.
-if [ ! -f 3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch ]; then
-  wget --no-clobber http://web.archive.org/web/20160509014317/https://gitlab.peach-bun.com/pinion/SFML/commit/3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch &&
-  git apply 3383b4a472f0bd16a8161fb8760cd3e6333f1782.patch
-fi
-if [ ! -d lin32 ]; then
-  mkdir lin32
-fi
-cd lin32
-cmake .. && make && sudo make install
-echo
+for arg in "$@"
+do
+  if [ "$arg" == "win32" ]
+  then
+    # Build EmptyEpsilon for Windows.
+    echo "Building EmptyEpsilon for win32..."
+    ( cd "${EE_BUILD_EE}" &&
+      mkdir -p "${EE_BUILD_EE_WIN32}" &&
+      cd "${EE_BUILD_EE_WIN32}" &&
+      ${EE_BUILD_CMAKE_BIN} .. \
+        -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+        -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_EE_CMAKE}/mingw.toolchain" \
+        -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE_BIN}" \
+        -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+        -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+        -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+      make -j 3 package &&
+      echo "!   win32 build complete to ${EE_BUILD_EE_WIN32}/EmptyEpsilon.zip" )
+  elif [ "$arg" == "linux" ]
+  then
+    # Build EmptyEpsilon for Debian.
+    echo "Building EmptyEpsilon for Debian..."
+    ( cd "${EE_BUILD_EE}" &&
+      mkdir -p "${EE_BUILD_EE_LINUX}" &&
+      cd "${EE_BUILD_EE_LINUX}" &&
+      ${EE_BUILD_CMAKE_BIN} .. \
+        -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+        -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE_BIN}" \
+        -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+        -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+        -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+      make &&
+      cpack \
+        -G DEB \
+        -D CPACK_PACKAGE_CONTACT=https://github.com/daid/ \
+        -R "${EE_BUILD_DATE:0:4}.${EE_BUILD_DATE:4:2}.${EE_BUILD_DATE:6:2}" &&
+      echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/EmptyEpsilon.deb" )
+  elif [ "$arg" == "android" ]
+  then
+    # Build EmptyEpsilon for Android.
+    echo "Building EmptyEpsilon for Android..."
+    if [ ! -f "${EE_BUILD_EE_ANDROID_KEYSTORE}" ]
+    then
+      echo "-   Generating keystore..."
+      keytool -genkey \
+        -noprompt \
+        -alias "${EE_BUILD_EE_ANDROID_KEYSTORE_ALIAS}" \
+        -dname "CN=daid.github.io, OU=EmptyEpsilon, O=EmptyEpsilon, L=None, ST=None, C=None" \
+        -keystore "${EE_BUILD_EE_ANDROID_KEYSTORE}" \
+        -storepass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
+        -keypass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
+        -keyalg RSA \
+        -keysize 2048 \
+        -validity 10000 &&
+      echo "!   Keystore generated to ${EE_BUILD_EE_ANDROID_KEYSTORE}."
+    fi
 
-## Build SFML for Windows.
-echo "Building SFML for Windows..."
-cd "${EE_BUILD_SFML_PATH}"
-if [ ! -d win32 ]; then
-  mkdir win32
-fi
-cd win32
-### Use the CMake toolchain from EE to make it easier to compile for Windows.
-cmake -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" -DOPENAL_LIBRARY="${EE_BUILD_SFML_PATH}/extlibs/bin/x86/openal32.dll" ..
-make
-echo
-
-## Build DrMingW Windows debugging DLLs.
-echo "Building DrMingW for Windows..."
-cd "${EE_BUILD_DRMINGW_PATH}"
-if [ ! -d win32 ]; then
-  mkdir win32
-fi
-cd win32
-### Use the CMake toolchain from EE to make it easier to compile for Windows.
-cmake -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" ..
-sudo make install
-### Workaround for "-lexchndl" missing dll.
-### Find a better way to get the mingw path!
-if [ ! -e "${EE_BUILD_MINGW_LIBPATH}/exchndl.dll" ]; then
-  sudo ln -s "${EE_BUILD_DRMINGW_PATH}/win32/bin/exchndl.dll" "${EE_BUILD_MINGW_LIBPATH}/"
-fi
-sudo ldconfig
-echo
-
-# Build EmptyEpsilon.
-
-## Build EmptyEpsilon for Linux.
-echo "Building EmptyEpsilon for Linux..."
-cd "${EE_BUILD_EE_PATH}"
-if [ ! -d lin32 ]; then
-  mkdir lin32
-fi
-cd lin32
-cmake -DSERIOUS_PROTON_DIR="${EE_BUILD_SP_PATH}/" -DSFML_ROOT="${EE_BUILD_SFML_PATH}/" ..
-make
-echo
-
-## Build EmptyEpsilon for Windows.
-echo "Building EmptyEpsilon for Windows..."
-cd "${EE_BUILD_EE_PATH}"
-if [ ! -d win32 ]; then
-  mkdir win32
-fi
-cd win32
-### Find a better way to get the mingw path!
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS:STRING=-DSFML_STATIC -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" -DSERIOUS_PROTON_DIR="${EE_BUILD_SP_PATH}/" -DSFML_ROOT="${EE_BUILD_SFML_PATH}/win32" -DMING_DLL_PATH="${EE_BUILD_MINGW_LIBPATH}/" -DDRMINGW_ROOT="${EE_BUILD_DRMINGW_PATH}/win32" -DENABLE_CRASH_LOGGER=1 ..
-make
-echo
-
-# Build a distributable archive.
-
-## Clean and rebuild the distribution directory.
-echo "Setting up Zip file..."
-cd "${EE_BUILD_EE_PATH}"
-python compile_script_docs.py > scripts_docs.html
-cd "${EE_BUILD_HOME}"
-if [ ! -d "${EE_BUILD_ZIP_PATH}" ]; then
-  mkdir "${EE_BUILD_ZIP_PATH}"
-fi
-if [ -d "${EE_BUILD_ZIP_PATH}/EmptyEpsilon" ]; then
-  rm -rf "${EE_BUILD_ZIP_PATH}"/EmptyEpsilon/*
-else
-  mkdir "${EE_BUILD_ZIP_PATH}/EmptyEpsilon"
-fi
-echo
-
-## Copy game content into the distribution directory.
-echo "Copying folders..."
-cp -rv "${EE_BUILD_EE_PATH}/packs" "${EE_BUILD_EE_PATH}/scripts" "${EE_BUILD_EE_PATH}/resources" "${EE_BUILD_ZIP_PATH}/EmptyEpsilon"
-echo
-
-echo "Copying binaries..."
-cp -v "${EE_BUILD_EE_PATH}/win32/EmptyEpsilon.exe" "${EE_BUILD_EE_PATH}/lin32/EmptyEpsilon" "${EE_BUILD_ZIP_PATH}/EmptyEpsilon"
-echo
-
-echo "Copying support files..."
-cp -v "${EE_BUILD_EE_PATH}"/artemis_mission_convert* "${EE_BUILD_EE_PATH}/LICENSE" "${EE_BUILD_EE_PATH}/logo.svg" "${EE_BUILD_EE_PATH}/README.md" "${EE_BUILD_EE_PATH}/scripts_docs.html" "${EE_BUILD_ZIP_PATH}/EmptyEpsilon"
-echo
-
-echo "Copying DLLs..."
-### Find a better way to get the mingw path!
-cp -v "${EE_BUILD_SFML_PATH}"/win32/lib/*.dll "${EE_BUILD_SFML_PATH}/extlibs/bin/x86/openal32.dll" "${EE_BUILD_DRMINGW_PATH}"/win32/bin/*.dll "${EE_BUILD_MINGW_LIBPATH}/libstdc++-6.dll" "${EE_BUILD_MINGW_LIBPATH}/libgcc_s_sjlj-1.dll" "${EE_BUILD_MINGW_USRPATH}/libwinpthread-1.dll" "${EE_BUILD_ZIP_PATH}/EmptyEpsilon"
-echo
-
-echo "Copying git commit references..."
-for i in "${EE_BUILD_SP_PATH}" "${EE_BUILD_EE_PATH}" "${EE_BUILD_SFML_PATH}" "${EE_BUILD_DRMINGW_PATH}"
-do (
-  echo "${i}";
-  echo "${i}" >> "${EE_BUILD_ZIP_PATH}/EmptyEpsilon/commit.log";
-  cat "${i}/commit.log";
-  cat "${i}/commit.log" >> "${EE_BUILD_ZIP_PATH}/EmptyEpsilon/commit.log"
-  echo "-----" >> "${EE_BUILD_ZIP_PATH}/EmptyEpsilon/commit.log";
-  echo "-----";
-); done
-echo
-
-## Zip the distribution directory.
-echo "Compressing build..."
-cd "${EE_BUILD_ZIP_PATH}"
-EE_BUILD_COMMIT="$(head ${EE_BUILD_EE_PATH}/commit.log | cut -d ' ' -f 1)"
-EE_BUILD_ZIP_FILE="${EE_BUILD_ZIP_PATH}/EmptyEpsilon_${EE_BUILD_DATE}_${EE_BUILD_COMMIT}.zip"
-zip -r "${EE_BUILD_ZIP_FILE}" ./EmptyEpsilon
-echo
-
-# Wrap up and note the end of the build.
-
-## If there's a /vagrant directory, assume we're using vagrant and copy the zips to /vagrant.
-if [ -d /vagrant ]; then
-  cp "${EE_BUILD_ZIP_FILE}" /vagrant
-  cd "${EE_BUILD_HOME}"
-
-  echo "Changing owner of all files in the buildhome directory to vagrant in case we need to interactively work with these files."
-  chown -R vagrant:vagrant "${EE_BUILD_HOME}"
-  echo "EmptyEpsilon built to /vagrant/${EE_BUILD_ZIP_FILE}."
-## Otherwise, just say we're done.
-else
-  echo "EmptyEpsilon built to ${EE_BUILD_ZIP_FILE}."
-fi
+    ( cd "${EE_BUILD_EE}" &&
+      mkdir -p "${EE_BUILD_EE_ANDROID}" &&
+      cd "${EE_BUILD_EE_ANDROID}" &&
+      ${EE_BUILD_CMAKE_BIN} .. \
+        -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+        -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_EE_CMAKE}/android.toolchain" \
+        -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE_BIN}" \
+        -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+        -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+        -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+      make -j 5 &&
+      echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
+  else
+    echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
+  fi
+done
