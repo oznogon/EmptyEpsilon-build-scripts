@@ -12,11 +12,8 @@ EE_BUILD_EE_ANDROID_KEYSTORE_ALIAS="Android"
 EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD="password"
 EE_BUILD_SP="${EE_BUILD_HOME}/SeriousProton"
 EE_BUILD_DATE="$(date +'%Y%m%d')"
-EE_BUILD_EE_CMAKE="${EE_BUILD_EE}/cmake"
-EE_BUILD_CMAKE_VERSION="3.16.4"
-EE_BUILD_CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v${EE_BUILD_CMAKE_VERSION}/cmake-${EE_BUILD_CMAKE_VERSION}-Linux-x86_64.tar.gz"
-EE_BUILD_CMAKE_BIN="${EE_BUILD_HOME}/cmake-${EE_BUILD_CMAKE_VERSION}-Linux-x86_64/bin/cmake"
-EE_BUILD_MAKE_BIN="/usr/bin/make"
+EE_BUILD_CMAKE="${EE_BUILD_EE}/cmake"
+EE_BUILD_MAKE="/usr/bin/make"
 
 set -e
 
@@ -38,24 +35,13 @@ fi
 
 # Install tools.
 echo "Installing tools..."
-sudo apt -y install git build-essential libx11-dev \
+sudo apt -y install git build-essential libx11-dev cmake \
   libxrandr-dev mesa-common-dev libglu1-mesa-dev \
   libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
   libopenal-dev libsndfile1-dev libxcb1-dev \
   libxcb-image0-dev mingw-w64 cmake gcc g++ zip \
-  unzip p7zip-full python3-minimal openjdk-8-jdk && # cmake libsfml-dev
+  unzip p7zip-full python3-minimal openjdk-8-jdk && # libsfml-dev
   echo "!   Tools installed."
-
-# Get CMake.
-if [ ! -f "${EE_BUILD_CMAKE_BIN}" ]
-then
-  echo "Downloading CMake ${EE_BUILD_CMAKE_VERSION}..."
-  wget "${EE_BUILD_CMAKE_URL}" &&
-    tar zxf cmake*.tar.gz &&
-    echo "!   CMake downloaded."
-else
-  echo "!   CMake already present."
-fi
 
 # Get SFML.
 if [ ! -d "${EE_BUILD_SFML}" ]
@@ -106,15 +92,15 @@ done
 # Build SFML.
 echo "Building SFML..."
 ( cd "${EE_BUILD_SFML}" &&
-  mkdir -p "${EE_BUILD_SFML}/_build" &&
-  cd "${EE_BUILD_SFML}/_build" &&
-  cmake "${EE_BUILD_SFML}" &&
-  make &&
-  echo "!   SFML built." &&
-  sudo make install &&
-  echo "!   SFML installed." &&
-  sudo ldconfig &&
-  echo "!   SFML libraries linked." )
+    mkdir -p "${EE_BUILD_SFML}/_build" &&
+    cd "${EE_BUILD_SFML}/_build" &&
+    cmake "${EE_BUILD_SFML}" &&
+    make &&
+    echo "!   SFML built." &&
+    sudo make install &&
+    echo "!   SFML installed." &&
+    sudo ldconfig &&
+    echo "!   SFML libraries linked." )
 
 for arg in "$@"
 do
@@ -123,36 +109,34 @@ do
     # Build EmptyEpsilon for Windows.
     echo "Building EmptyEpsilon for win32..."
     ( cd "${EE_BUILD_EE}" &&
-      mkdir -p "${EE_BUILD_EE_WIN32}" &&
-      cd "${EE_BUILD_EE_WIN32}" &&
-      ${EE_BUILD_CMAKE_BIN} .. \
-        -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
-        -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_EE_CMAKE}/mingw.toolchain" \
-        -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE_BIN}" \
-        -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-        -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-        -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
-      make -j 3 package &&
-      echo "!   win32 build complete to ${EE_BUILD_EE_WIN32}/EmptyEpsilon.zip" )
+        mkdir -p "${EE_BUILD_EE_WIN32}" &&
+        cd "${EE_BUILD_EE_WIN32}" &&
+        cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+          -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" \
+          -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+        make -j 3 package &&
+        echo "!   win32 build complete to ${EE_BUILD_EE_WIN32}/EmptyEpsilon.zip" )
   elif [ "$arg" == "linux" ]
   then
     # Build EmptyEpsilon for Debian.
     echo "Building EmptyEpsilon for Debian..."
     ( cd "${EE_BUILD_EE}" &&
-      mkdir -p "${EE_BUILD_EE_LINUX}" &&
-      cd "${EE_BUILD_EE_LINUX}" &&
-      ${EE_BUILD_CMAKE_BIN} .. \
-        -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
-        -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE_BIN}" \
-        -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-        -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-        -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
-      make &&
-      cpack \
-        -G DEB \
-        -D CPACK_PACKAGE_CONTACT=https://github.com/daid/ \
-        -R "${EE_BUILD_DATE:0:4}.${EE_BUILD_DATE:4:2}.${EE_BUILD_DATE:6:2}" &&
-      echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/EmptyEpsilon.deb" )
+        mkdir -p "${EE_BUILD_EE_LINUX}" &&
+        cd "${EE_BUILD_EE_LINUX}" &&
+        cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+          -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+        make &&
+	cpack \
+	  -G DEB \
+	  -D CPACK_PACKAGE_CONTACT=https://github.com/daid/ \
+	  -R "${EE_BUILD_DATE:0:4}.${EE_BUILD_DATE:4:2}.${EE_BUILD_DATE:6:2}" &&
+        echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/EmptyEpsilon.deb" )
   elif [ "$arg" == "android" ]
   then
     # Build EmptyEpsilon for Android.
@@ -174,17 +158,16 @@ do
     fi
 
     ( cd "${EE_BUILD_EE}" &&
-      mkdir -p "${EE_BUILD_EE_ANDROID}" &&
-      cd "${EE_BUILD_EE_ANDROID}" &&
-      ${EE_BUILD_CMAKE_BIN} .. \
-        -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
-        -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_EE_CMAKE}/android.toolchain" \
-        -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE_BIN}" \
-        -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-        -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-        -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
-      make -j 5 &&
-      echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
+        mkdir -p "${EE_BUILD_EE_ANDROID}" &&
+        cd "${EE_BUILD_EE_ANDROID}" &&
+        cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+          -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/android.toolchain" \
+          -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+        make -j 5 &&
+        echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
   else
     echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
   fi
