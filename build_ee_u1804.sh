@@ -95,61 +95,75 @@ echo "Building SFML..."
     sudo ldconfig &&
     echo "!   SFML libraries linked." )
 
-# Build EmptyEpsilon for Windows.
-echo "Building EmptyEpsilon for win32..."
-( cd "${EE_BUILD_EE}" &&
-    mkdir -p "${EE_BUILD_EE_WIN32}" &&
-    cd "${EE_BUILD_EE_WIN32}" &&
-    cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
-      -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" \
-      -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
-      -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-      -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-      -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
-    make -j 3 package &&
-    echo "!   win32 build complete to ${EE_BUILD_EE_WIN32}/EmptyEpsilon.zip" )
-
-# Build EmptyEpsilon for Debian.
-echo "Building EmptyEpsilon for Debian..."
-( cd "${EE_BUILD_EE}" &&
-    mkdir -p "${EE_BUILD_EE_LINUX}" &&
-    cd "${EE_BUILD_EE_LINUX}" &&
-    cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
-      -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
-      -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-      -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-      -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
-    make &&
-    sudo make install &&
-    echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/EmptyEpsilon.deb" )
-
-# Build EmptyEpsilon for Android.
-echo "Building EmptyEpsilon for Android..."
-
-if [ ! -f "${EE_BUILD_EE_ANDROID_KEYSTORE}" ]
+if [ "$#" == "0" ]
 then
-  echo "-   Generating keystore..."
-  keytool -genkey \
-    -noprompt \
-    -alias "${EE_BUILD_EE_ANDROID_KEYSTORE_ALIAS}" \
-    -dname "CN=daid.github.io, OU=EmptyEpsilon, O=EmptyEpsilon, L=None, ST=None, C=None" \
-    -keystore "${EE_BUILD_EE_ANDROID_KEYSTORE}" \
-    -storepass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
-    -keypass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
-    -keyalg RSA \
-    -keysize 2048 \
-    -validity 10000 &&
-  echo "!   Keystore generated to ${EE_BUILD_EE_ANDROID_KEYSTORE}."
+  echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
 fi
 
-( cd "${EE_BUILD_EE}" &&
-    mkdir -p "${EE_BUILD_EE_ANDROID}" &&
-    cd "${EE_BUILD_EE_ANDROID}" &&
-    cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
-      -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/android.toolchain" \
-      -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
-      -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-      -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-      -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
-    make -j 5 &&
-    echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
+for arg in "$@"
+do
+  if [ "$arg" == "win32" ]
+  then
+    # Build EmptyEpsilon for Windows.
+    echo "Building EmptyEpsilon for win32..."
+    ( cd "${EE_BUILD_EE}" &&
+        mkdir -p "${EE_BUILD_EE_WIN32}" &&
+        cd "${EE_BUILD_EE_WIN32}" &&
+        cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+          -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" \
+          -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+        make -j 3 package &&
+        echo "!   win32 build complete to ${EE_BUILD_EE_WIN32}/EmptyEpsilon.zip" )
+  elif [ "$arg" == "linux" ]
+  then
+    # Build EmptyEpsilon for Debian.
+    echo "Building EmptyEpsilon for Debian..."
+    ( cd "${EE_BUILD_EE}" &&
+        mkdir -p "${EE_BUILD_EE_LINUX}" &&
+        cd "${EE_BUILD_EE_LINUX}" &&
+        cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+          -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+        make &&
+        sudo make install &&
+        echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/" )
+  elif [ "$arg" == "android" ]
+  then
+    # Build EmptyEpsilon for Android.
+    echo "Building EmptyEpsilon for Android..."
+    if [ ! -f "${EE_BUILD_EE_ANDROID_KEYSTORE}" ]
+    then
+      echo "-   Generating keystore..."
+      keytool -genkey \
+        -noprompt \
+        -alias "${EE_BUILD_EE_ANDROID_KEYSTORE_ALIAS}" \
+        -dname "CN=daid.github.io, OU=EmptyEpsilon, O=EmptyEpsilon, L=None, ST=None, C=None" \
+        -keystore "${EE_BUILD_EE_ANDROID_KEYSTORE}" \
+        -storepass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
+        -keypass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
+        -keyalg RSA \
+        -keysize 2048 \
+        -validity 10000 &&
+      echo "!   Keystore generated to ${EE_BUILD_EE_ANDROID_KEYSTORE}."
+    fi
+
+    ( cd "${EE_BUILD_EE}" &&
+        mkdir -p "${EE_BUILD_EE_ANDROID}" &&
+        cd "${EE_BUILD_EE_ANDROID}" &&
+        cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+          -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/android.toolchain" \
+          -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+        make -j 5 &&
+        echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
+  else
+    echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
+  fi
+done
