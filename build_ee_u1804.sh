@@ -17,6 +17,13 @@ EE_BUILD_MAKE="/usr/bin/make"
 
 set -e
 
+# Require an argument
+if [ "$#" == "0" ]
+then
+  echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
+  exit 1
+fi
+
 # Update the system if it hasn't been in the last 12 hours.
 if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -720)" ]
 then
@@ -33,7 +40,7 @@ sudo apt -y install git build-essential libx11-dev cmake \
   libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
   libopenal-dev libsndfile1-dev libxcb1-dev \
   libxcb-image0-dev mingw-w64 cmake gcc g++ zip \
-  unzip python3-minimal openjdk-8-jdk && #libsfml-dev
+  unzip python3-minimal openjdk-8-jdk && # libsfml-dev
   echo "!   Tools installed."
 
 # Get SFML.
@@ -95,11 +102,6 @@ echo "Building SFML..."
     sudo ldconfig &&
     echo "!   SFML libraries linked." )
 
-if [ "$#" == "0" ]
-then
-  echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
-fi
-
 for arg in "$@"
 do
   if [ "$arg" == "win32" ]
@@ -130,8 +132,11 @@ do
           -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
           -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
         make &&
-        sudo make install &&
-        echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/" )
+	cpack \
+	  -G DEB \
+	  -D CPACK_PACKAGE_CONTACT=https://github.com/daid/ \
+	  -R "${EE_BUILD_DATE:0:4}.${EE_BUILD_DATE:4:2}.${EE_BUILD_DATE:6:2}" &&
+        echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/EmptyEpsilon.deb" )
   elif [ "$arg" == "android" ]
   then
     # Build EmptyEpsilon for Android.
