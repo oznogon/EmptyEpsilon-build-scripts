@@ -14,71 +14,96 @@ EE_BUILD_SP="${EE_BUILD_HOME}/SeriousProton"
 EE_BUILD_DATE="$(date +'%Y%m%d')"
 EE_BUILD_CMAKE="${EE_BUILD_EE}/cmake"
 EE_BUILD_MAKE="/usr/bin/make"
+EE_UPDATE="yes"
 
 set -e
 
 # Require an argument
 if [ "$#" == "0" ]
 then
-  echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
+  echo "X   No targets provided as arguments. Valid targets: win32 linux android"
   exit 1
 fi
 
-# Update the system if it hasn't been in the last 12 hours.
-if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -720)" ]
-then
-  echo "Updating system..."
-  sudo apt-get update &&
-    sudo apt-get -y upgrade &&
-    echo "!   System updated."
-fi
+for arg in "$@"
+do
+  if [ "${arg:0:2}" == "20" ]
+  then
+    EE_BUILD_DATE="${arg}"
+  elif [ "${arg:0:2}" == "00" ]
+  then
+    EE_BUILD_DATE="00000000"
+  elif [ "${arg}" == "noupdate" ]
+  then
+    echo "!   Skipping repo cloning, tool installation, and updates."
+    EE_UPDATE="no"
+  fi
+done
 
-# Install tools.
-echo "Installing tools..."
-sudo apt -y install git build-essential libx11-dev cmake \
-  libxrandr-dev mesa-common-dev libglu1-mesa-dev \
-  libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
-  libopenal-dev libsndfile1-dev libxcb1-dev \
-  libxcb-image0-dev mingw-w64 cmake gcc g++ zip \
-  unzip p7zip-full python3-minimal openjdk-8-jdk && # libsfml-dev
-  echo "!   Tools installed."
+echo "-   Using ${EE_BUILD_DATE} as the EmptyEpsilon version."
+EE_BUILD_DATE_YEAR="${EE_BUILD_DATE:0:4}"
+EE_BUILD_DATE_MONTH="${EE_BUILD_DATE:4:2}"
+EE_BUILD_DATE_DAY="${EE_BUILD_DATE:6:2}"
 
-# Get SFML.
-if [ ! -d "${EE_BUILD_SFML}" ]
+if [ "${EE_UPDATE}" == "yes" ]
 then
-  echo "Cloning SFML repo to ${EE_BUILD_SFML}..."
-  git clone https://github.com/SFML/SFML.git "${EE_BUILD_SFML}" &&
-  echo "!   SFML source cloned."
-else
-  echo "Fetching and fast-forwarding SFML repo at ${EE_BUILD_SFML}..."
-  ( cd "${EE_BUILD_SFML}" &&
-    git fetch --all && git merge --ff-only &&
-    echo "!   SFML source is up to date." )
-fi
+  echo "-   Installing, cloning, or updating repos and tools."
+  # Update the system if it hasn't been in the last 12 hours.
+  if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -720)" ]
+  then
+    echo "Updating system..."
+    sudo apt-get update &&
+      sudo apt-get -y upgrade &&
+      echo "!   System updated."
+  fi
 
-# Get SeriousProton and EmptyEpsilon.
-if [ ! -d "${EE_BUILD_SP}" ]
-then
-  echo "Cloning SeriousProton repo to ${EE_BUILD_SP}..."
-  git clone https://github.com/daid/SeriousProton.git "${EE_BUILD_SP}" &&
-  echo "!   SeriousProton source cloned."
-else
-  echo "Fetching and fast-forwarding SeriousProton repo at ${EE_BUILD_SP}..."
-  ( cd "${EE_BUILD_SP}" &&
-    git fetch --all && git merge --ff-only &&
-    echo "!   SeriousProton source is up to date." )
-fi
+  # Install tools.
+  echo "Installing tools..."
+  sudo apt -y install git build-essential libx11-dev cmake \
+    libxrandr-dev mesa-common-dev libglu1-mesa-dev \
+    libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
+    libopenal-dev libsndfile1-dev libxcb1-dev \
+    libxcb-image0-dev mingw-w64 cmake gcc g++ zip \
+    unzip p7zip-full python3-minimal openjdk-8-jdk && # libsfml-dev
+    echo "!   Tools installed."
 
-if [ ! -d "${EE_BUILD_EE}" ]
-then
-  echo "Cloning EmptyEpsilon repo to ${EE_BUILD_EE}..."
-  git clone https://github.com/daid/EmptyEpsilon.git "${EE_BUILD_EE}" &&
-  echo "!   EmptyEpsilon source cloned."
-else
-  echo "Fetching and fast-forwarding EmptyEpsilon repo at ${EE_BUILD_EE}..."
-  ( cd "${EE_BUILD_EE}" &&
-    git fetch --all && git merge --ff-only &&
-    echo "!   EmptyEpsilon source is up to date." )
+  # Get SFML.
+  if [ ! -d "${EE_BUILD_SFML}" ]
+  then
+    echo "Cloning SFML repo to ${EE_BUILD_SFML}..."
+    git clone https://github.com/SFML/SFML.git "${EE_BUILD_SFML}" &&
+    echo "!   SFML source cloned."
+  else
+    echo "Fetching and fast-forwarding SFML repo at ${EE_BUILD_SFML}..."
+    ( cd "${EE_BUILD_SFML}" &&
+      git fetch --all && git merge --ff-only &&
+      echo "!   SFML source is up to date." )
+  fi
+
+  # Get SeriousProton and EmptyEpsilon.
+  if [ ! -d "${EE_BUILD_SP}" ]
+  then
+    echo "Cloning SeriousProton repo to ${EE_BUILD_SP}..."
+    git clone https://github.com/daid/SeriousProton.git "${EE_BUILD_SP}" &&
+    echo "!   SeriousProton source cloned."
+  else
+    echo "Fetching and fast-forwarding SeriousProton repo at ${EE_BUILD_SP}..."
+    ( cd "${EE_BUILD_SP}" &&
+      git fetch --all && git merge --ff-only &&
+      echo "!   SeriousProton source is up to date." )
+  fi
+
+  if [ ! -d "${EE_BUILD_EE}" ]
+  then
+    echo "Cloning EmptyEpsilon repo to ${EE_BUILD_EE}..."
+    git clone https://github.com/daid/EmptyEpsilon.git "${EE_BUILD_EE}" &&
+    echo "!   EmptyEpsilon source cloned."
+  else
+    echo "Fetching and fast-forwarding EmptyEpsilon repo at ${EE_BUILD_EE}..."
+    ( cd "${EE_BUILD_EE}" &&
+      git fetch --all && git merge --ff-only &&
+      echo "!   EmptyEpsilon source is up to date." )
+  fi
 fi
 
 # Write commit IDs for each repo into a file for reference.
@@ -114,9 +139,9 @@ do
         cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
           -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/mingw.toolchain" \
           -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
-          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
         make -j 3 package &&
         echo "!   win32 build complete to ${EE_BUILD_EE_WIN32}/EmptyEpsilon.zip" )
   elif [ "$arg" == "linux" ]
@@ -128,14 +153,14 @@ do
         cd "${EE_BUILD_EE_LINUX}" &&
         cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
           -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
-          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
         make &&
 	cpack \
 	  -G DEB \
 	  -D CPACK_PACKAGE_CONTACT=https://github.com/daid/ \
-	  -R "${EE_BUILD_DATE:0:4}.${EE_BUILD_DATE:4:2}.${EE_BUILD_DATE:6:2}" &&
+	  -R "${EE_BUILD_DATE_YEAR}.${EE_BUILD_DATE_MONTH}.${EE_BUILD_DATE_DAY}" &&
         echo "!   Debian build complete to ${EE_BUILD_EE_LINUX}/EmptyEpsilon.deb" )
   elif [ "$arg" == "android" ]
   then
@@ -163,12 +188,10 @@ do
         cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
           -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/android.toolchain" \
           -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
-          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE:0:4}" \
-          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE:4:2}" \
-          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE:6:2}" &&
+          -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
+          -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
+          -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
         make -j 5 &&
         echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
-  else
-    echo "X   No targets provided as arguments. Valid arguments: win32 linux android"
   fi
 done
