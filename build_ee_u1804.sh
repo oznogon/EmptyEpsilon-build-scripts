@@ -104,6 +104,19 @@ then
       git fetch --all && git merge --ff-only &&
       echo "!   EmptyEpsilon source is up to date." )
   fi
+
+  # Build SFML.
+  echo "Building SFML..."
+  ( cd "${EE_BUILD_SFML}" &&
+      mkdir -p "${EE_BUILD_SFML}/_build" &&
+      cd "${EE_BUILD_SFML}/_build" &&
+      cmake "${EE_BUILD_SFML}" &&
+      make &&
+      echo "!   SFML built." &&
+      sudo make install &&
+      echo "!   SFML installed." &&
+      sudo ldconfig &&
+      echo "!   SFML libraries linked." )
 fi
 
 # Write commit IDs for each repo into a file for reference.
@@ -114,18 +127,6 @@ do
     echo "-   $(git log --pretty='oneline' -n 1)" )
 done
 
-# Build SFML.
-echo "Building SFML..."
-( cd "${EE_BUILD_SFML}" &&
-    mkdir -p "${EE_BUILD_SFML}/_build" &&
-    cd "${EE_BUILD_SFML}/_build" &&
-    cmake "${EE_BUILD_SFML}" &&
-    make &&
-    echo "!   SFML built." &&
-    sudo make install &&
-    echo "!   SFML installed." &&
-    sudo ldconfig &&
-    echo "!   SFML libraries linked." )
 
 for arg in "$@"
 do
