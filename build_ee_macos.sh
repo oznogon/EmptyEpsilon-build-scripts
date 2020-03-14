@@ -11,6 +11,7 @@ EE_BUILD_EE_STAGING_DMG="${EE_BUILD_EE_MACOS}/image_staging"
 EE_BUILD_SP="${EE_BUILD_HOME}/SeriousProton"
 EE_BUILD_DATE="$(date +'%Y%m%d')"
 EE_BUILD_CMAKE="${EE_BUILD_EE}/cmake"
+EE_BUILD="yes"
 EE_UPDATE="yes"
 
 for arg in "$@"
@@ -21,6 +22,9 @@ do
   elif [ "${arg}" == "noupdate" ]
   then
     EE_UPDATE="no"
+  elif [ "${arg}" == "nobuild" ]
+  then
+    EE_BUILD="no"
   fi
 done
 
@@ -87,39 +91,42 @@ fi
       -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
       -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
       -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
-    make &&
-    make install &&
+    make -j8 &&
     echo "!   macOS app build complete to ${EE_BUILD_EE_APP}" &&
-    echo "-   Bundling dependencies..." &&
-    "${DYLIBBUNDLER_BIN}" \
-      --overwrite-dir \
-      --bundle-deps \
-      --search-path "/usr/local/lib" \
-      --fix-file "${EE_BUILD_EE_APP}/Contents/MacOS/EmptyEpsilon" \
-      --dest-dir "${EE_BUILD_EE_APP}/Contents/libs" &&
-    echo "!   Dependencies bundled." &&
-    echo "Building macOS DMG (disk image) to ${EE_BUILD_EE_DMG}..." &&
-    if [ -d "${EE_BUILD_EE_STAGING_DMG}" ]
+    if [ "${EE_BUILD}" == "yes" ]
     then
-      rm -rf "${EE_BUILD_EE_STAGING_DMG}"
-    fi
-    mkdir -p "${EE_BUILD_EE_STAGING_DMG}" &&
-    cp -r \
-      "${EE_BUILD_EE_APP}" \
-      "${EE_BUILD_EE_MACOS}/script_reference.html" \
-      "${EE_BUILD_EE_STAGING_DMG}/" &&
-    hdiutil \
-      create "${EE_BUILD_EE_TEMP_DMG}" \
-      -ov \
-      -volname "EmptyEpsilon ${EE_BUILD_DATE}" \
-      -fs HFS+ \
-      -srcfolder "${EE_BUILD_EE_STAGING_DMG}" &&
-    rm -rf "${EE_BUILD_EE_DMG}" &&
-    hdiutil \
-      convert "${EE_BUILD_EE_TEMP_DMG}" \
-      -format UDZO \
-      -o "${EE_BUILD_EE_DMG}" &&
-    echo "!   macOS DMG build complete to ${EE_BUILD_EE_DMG}" &&
-    echo "-   Cleaning up temporary image creation files..." &&
-    rm -rf "${EE_BUILD_EE_TEMP_DMG}" "${EE_BUILD_EE_STAGING_DMG}" &&
-    echo "!   Temporary image creation files deleted." )
+      make install &&
+      echo "-   Bundling dependencies..." &&
+      "${DYLIBBUNDLER_BIN}" \
+        --overwrite-dir \
+        --bundle-deps \
+        --search-path "/usr/local/lib" \
+        --fix-file "${EE_BUILD_EE_APP}/Contents/MacOS/EmptyEpsilon" \
+        --dest-dir "${EE_BUILD_EE_APP}/Contents/libs" &&
+      echo "!   Dependencies bundled." &&
+      echo "Building macOS DMG (disk image) to ${EE_BUILD_EE_DMG}..." &&
+      if [ -d "${EE_BUILD_EE_STAGING_DMG}" ]
+      then
+        rm -rf "${EE_BUILD_EE_STAGING_DMG}"
+      fi
+      mkdir -p "${EE_BUILD_EE_STAGING_DMG}" &&
+      cp -r \
+        "${EE_BUILD_EE_APP}" \
+        "${EE_BUILD_EE_MACOS}/script_reference.html" \
+        "${EE_BUILD_EE_STAGING_DMG}/" &&
+      hdiutil \
+        create "${EE_BUILD_EE_TEMP_DMG}" \
+        -ov \
+        -volname "EmptyEpsilon ${EE_BUILD_DATE}" \
+        -fs HFS+ \
+        -srcfolder "${EE_BUILD_EE_STAGING_DMG}" &&
+      rm -rf "${EE_BUILD_EE_DMG}" &&
+      hdiutil \
+        convert "${EE_BUILD_EE_TEMP_DMG}" \
+        -format UDZO \
+        -o "${EE_BUILD_EE_DMG}" &&
+      echo "!   macOS DMG build complete to ${EE_BUILD_EE_DMG}" &&
+      echo "-   Cleaning up temporary image creation files..." &&
+      rm -rf "${EE_BUILD_EE_TEMP_DMG}" "${EE_BUILD_EE_STAGING_DMG}" &&
+      echo "!   Temporary image creation files deleted."
+    fi )
