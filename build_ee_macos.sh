@@ -13,6 +13,7 @@ EE_BUILD_DATE="$(date +'%Y%m%d')"
 EE_BUILD_CMAKE="${EE_BUILD_EE}/cmake"
 EE_BUILD="yes"
 EE_UPDATE="yes"
+EE_THREADS="3"
 
 for arg in "$@"
 do
@@ -25,8 +26,12 @@ do
   elif [ "${arg}" == "nobuild" ]
   then
     EE_BUILD="no"
+  elif [ "${arg:0:7}" == "threads" ]
+  then
+    EE_THREADS="${arg:7:1}"
   fi
 done
+echo "-   Using ${EE_THREADS} threads to build (make -j${EE_THREADS}).";
 
 EE_BUILD_DATE_YEAR="${EE_BUILD_DATE:0:4}"
 EE_BUILD_DATE_MONTH="${EE_BUILD_DATE:4:2}"
@@ -91,7 +96,7 @@ fi
       -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
       -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
       -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
-    make -j8 &&
+    GL_SILENCE_DEPRECATION=1 make -j"${EE_THREADS}" &&
     echo "!   macOS app build complete to ${EE_BUILD_EE_APP}" &&
     if [ "${EE_BUILD}" == "yes" ]
     then

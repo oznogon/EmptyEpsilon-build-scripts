@@ -15,6 +15,7 @@ EE_BUILD_DATE="$(date +'%Y%m%d')"
 EE_BUILD_CMAKE="${EE_BUILD_EE}/cmake"
 EE_BUILD_MAKE="/usr/bin/make"
 EE_UPDATE="yes"
+EE_THREADS="3"
 
 set -e
 
@@ -37,6 +38,9 @@ do
   then
     echo "!   Skipping repo cloning, tool installation, and updates."
     EE_UPDATE="no"
+  elif [ "${arg:0:7}" == "threads" ]
+  then
+    EE_THREADS="${arg:7:1}"
   fi
 done
 
@@ -143,7 +147,7 @@ do
           -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
           -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
           -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
-        make -j 3 package &&
+        make -j"${EE_THREADS}" package &&
         echo "!   win32 build complete to ${EE_BUILD_EE_WIN32}/EmptyEpsilon.zip" )
   elif [ "$arg" == "linux" ]
   then
@@ -157,7 +161,7 @@ do
           -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
           -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
           -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
-        make &&
+        make -j"${EE_THREADS}" &&
 	cpack \
 	  -G DEB \
 	  -D CPACK_PACKAGE_CONTACT=https://github.com/daid/ \
@@ -192,7 +196,7 @@ do
           -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
           -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
           -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
-        make -j 5 &&
+        make -j"${EE_THREADS}" &&
         echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
   fi
 done
