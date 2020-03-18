@@ -7,7 +7,7 @@ do
   # facter > time-${i}-${j}.bench
   (
     cd ..
-    time ./build_ee_u1804.sh noupdate threads${i} ${j}
+    time ./build_ee_macos.sh noupdate threads${i} ${j}
   ) >> time-${i}-${j}.bench 2>&1
   echo "Testing ${j} with ${i} threads complete."
   tail -n 5 time-${i}-${j}.bench
