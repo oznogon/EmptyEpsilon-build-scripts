@@ -3,7 +3,7 @@ for i in 1 3 6 12
 do
   for j in win32 linux android
   do
-    rm -rf EmptyEpsilon/_build_${j}
+    rm -rf ../EmptyEpsilon/_build_${j}
     echo "Testing ${j} with ${i} threads..."
     facter > time-${i}-${j}.bench
     (
