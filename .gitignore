@@ -1,6 +1,7 @@
 SFML/
 EmptyEpsilon/
 SeriousProton/
+dylibbundler/
 *~
 *.zip
 *.log

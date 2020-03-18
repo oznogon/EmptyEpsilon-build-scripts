@@ -40,7 +40,7 @@ do
     EE_UPDATE="no"
   elif [ "${arg:0:7}" == "threads" ]
   then
-    EE_THREADS="${arg:7:1}"
+    EE_THREADS="${arg:7:2}"
   fi
 done
 
