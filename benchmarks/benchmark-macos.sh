@@ -4,7 +4,7 @@ for i in 1 3 6 12
 do
   rm -rf EmptyEpsilon/_build_${j}
   echo "Testing ${j} with ${i} threads..."
-  facter > time-${i}-${j}.bench
+  # facter > time-${i}-${j}.bench
   (
     cd ..
     time ./build_ee_u1804.sh noupdate threads${i} ${j}
