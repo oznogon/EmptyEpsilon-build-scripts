@@ -1,0 +1,17 @@
+version: v1.0
+name: First pipeline
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: uh no
+    task:
+      prologue:
+        commands:
+          - checkout
+      jobs:
+        - name: what
+          commands:
+            - checkout
+            - ./build_ee_u1804.sh threads2 linux
