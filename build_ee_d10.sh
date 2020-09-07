@@ -146,7 +146,7 @@ do
     then
       for i in $(dirname $(find /usr -iname windows.h))
       do
-        ln -s ${i}/windows.h ${i}/Windows.h
+        sudo ln -s ${i}/windows.h ${i}/Windows.h
       done
     fi
     ( cd "${EE_BUILD_EE}" &&
