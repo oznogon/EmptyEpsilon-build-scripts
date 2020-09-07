@@ -52,18 +52,20 @@ EE_BUILD_DATE_DAY="${EE_BUILD_DATE:6:2}"
 if [ "${EE_UPDATE}" == "yes" ]
 then
   echo "-   Installing, cloning, or updating repos and tools."
+  # Update the index. CI loves loves loves stale indices.
+  sudo apt-get update &&
+
   # Update the system if it hasn't been in the last 12 hours.
   if [ -z "$(find /var/cache/apt/pkgcache.bin -mmin -720)" ]
   then
     echo "Updating system..."
-    sudo apt-get update &&
-      sudo apt-get -y upgrade &&
+    sudo apt-get -y upgrade &&
       echo "!   System updated."
   fi
 
   # Install tools.
   echo "Installing tools..."
-  sudo apt -y install git build-essential libx11-dev cmake \
+  sudo apt-get -y install git build-essential libx11-dev \
     libxrandr-dev mesa-common-dev libglu1-mesa-dev \
     libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
     libopenal-dev libsndfile1-dev libxcb1-dev \
