@@ -4,6 +4,10 @@ agent:
   machine:
     type: e1-standard-2
     os_image: ubuntu1804
+global_job_config:
+  prologue:
+    commands:
+      - checkout
 blocks:
   - name: build it all
     task:
@@ -13,7 +17,6 @@ blocks:
       jobs:
         - name: yes all of it
           commands:
-            - checkout
             - ./build_ee_u1804.sh threads2 win32 linux android
       epilogue:
         on_pass:
@@ -22,3 +25,20 @@ blocks:
             - 'artifact push project EmptyEpsilon/_build_win32/EmptyEpsilon.zip -d releases/EE-${TIMESTAMP}-win32.zip'
             - 'artifact push project EmptyEpsilon/_build_linux/EmptyEpsilon.deb -d releases/EE-${TIMESTAMP}-linux.deb'
             - 'artifact push project EmptyEpsilon/_build_android/EmptyEpsilon.apk -d releases/EE-${TIMESTAMP}-android.apk'
+    dependencies: []
+  - name: mac too
+    dependencies: []
+    task:
+      epilogue:
+        on_pass:
+          commands:
+            - TIMESTAMP=`date +%Y-%m-%d_%H-%M-%S`
+            - 'artifact push project EmptyEpsilon/_build_macos/EmptyEpsilon.dmg -d releases/EE-${TIMESTAMP}-macos.dmg'
+      agent:
+        machine:
+          type: a1-standard-4
+          os_image: macos-xcode11
+      jobs:
+        - name: I really mean it
+          commands:
+            - ./build_ee_macos.sh threads2
