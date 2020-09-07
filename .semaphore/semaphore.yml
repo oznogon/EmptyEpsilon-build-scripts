@@ -5,13 +5,20 @@ agent:
     type: e1-standard-2
     os_image: ubuntu1804
 blocks:
-  - name: uh no
+  - name: build it all
     task:
       prologue:
         commands:
           - checkout
       jobs:
-        - name: what
+        - name: yes all of it
           commands:
             - checkout
-            - ./build_ee_u1804.sh threads2 linux
+            - ./build_ee_u1804.sh threads2 win32 linux android
+      epilogue:
+        on_pass:
+          commands:
+            - TIMESTAMP=`date +%Y-%m-%d_%H-%M-%S`
+            - 'artifact push project EmptyEpsilon/_build_win32/EmptyEpsilon.zip -d releases/EE-${TIMESTAMP}-win32.zip'
+            - 'artifact push project EmptyEpsilon/_build_linux/EmptyEpsilon.deb -d releases/EE-${TIMESTAMP}-linux.deb'
+            - 'artifact push project EmptyEpsilon/_build_android/EmptyEpsilon.apk -d releases/EE-${TIMESTAMP}-android.apk'
