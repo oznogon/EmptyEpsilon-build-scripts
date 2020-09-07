@@ -63,7 +63,7 @@ then
 
   # Install tools.
   echo "Installing tools..."
-  sudo apt -y install git build-essential libx11-dev cmake \
+  sudo apt -y install git build-essential libx11-dev \
     libxrandr-dev mesa-common-dev libglu1-mesa-dev \
     libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
     libopenal-dev libsndfile1-dev libxcb1-dev \
@@ -138,6 +138,17 @@ do
   then
     # Build EmptyEpsilon for Windows.
     echo "Building EmptyEpsilon for win32..."
+    # discord/gamesdk-and-dispatch#100
+    # discord_game_sdk.h uses uppercase Windows.h.
+    # If we don't have one too, the build breaks.
+    # Computers are the single greatest advancement in the history of humanity.
+    if [ ! -f "/usr/share/mingw-w64/include/Windows.h" ]
+    then
+      for i in $(dirname $(find /usr -iname windows.h))
+      do
+        ln -s ${i}/windows.h ${i}/Windows.h
+      done
+    fi
     ( cd "${EE_BUILD_EE}" &&
         mkdir -p "${EE_BUILD_EE_WIN32}" &&
         cd "${EE_BUILD_EE_WIN32}" &&
