@@ -70,7 +70,7 @@ then
     libudev-dev libglew-dev libjpeg-dev libfreetype6-dev \
     libopenal-dev libsndfile1-dev libxcb1-dev \
     libxcb-image0-dev mingw-w64 cmake gcc g++ zip \
-    unzip p7zip-full python3-minimal openjdk-8-jdk && # libsfml-dev
+    unzip p7zip-full python3-minimal openjdk-8-jdk libxcursor-dev && # libsfml-dev
     echo "!   Tools installed."
 
   # Get SFML.
