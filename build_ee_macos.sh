@@ -4,6 +4,11 @@ DYLIBBUNDLER_PATH="${EE_BUILD_HOME}/dylibbundler"
 DYLIBBUNDLER_BIN="${DYLIBBUNDLER_PATH}/dylibbundler"
 EE_BUILD_EE="${EE_BUILD_HOME}/EmptyEpsilon"
 EE_BUILD_EE_MACOS="${EE_BUILD_EE}/_build_macos"
+EE_BUILD_EE_ANDROID="${EE_BUILD_EE}/_build_android"
+EE_BUILD_EE_ANDROID_KEYSTORE="$HOME/.keystore"
+EE_BUILD_EE_ANDROID_KEYSTORE_ALIAS="Android"
+EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD="password"
+EE_IS_ANDROID="no"
 EE_BUILD_EE_APP="${EE_BUILD_EE_MACOS}/EmptyEpsilon.app"
 EE_BUILD_EE_DMG="${EE_BUILD_EE_MACOS}/EmptyEpsilon.dmg"
 EE_BUILD_EE_TEMP_DMG="/tmp/tmp.dmg"
@@ -15,9 +20,19 @@ EE_BUILD="yes"
 EE_UPDATE="yes"
 EE_THREADS="3"
 
+# Explain arguments
+if [ "$#" == "0" ]
+then
+  echo "X   No targets provided as arguments. Valid targets: macos android. Assuming macos"
+fi
+
+# Parse version and thread arguments
 for arg in "$@"
 do
-  if [ "${arg:0:2}" == "20" ] || [ "${arg}" == "00000000" ]
+  if [ "${arg}" == "android" ]
+  then
+    EE_IS_ANDROID="yes"
+  elif [ "${arg:0:2}" == "20" ] || [ "${arg}" == "00000000" ]
   then
     EE_BUILD_DATE="${arg}"
   elif [ "${arg}" == "noupdate" ]
@@ -87,8 +102,42 @@ then
   fi
 fi
 
+if [ "${EE_IS_ANDROID}" == "yes" ]
+then
+  # Install OpenJDK 8 from Homebrew; newer versions fail
+  brew install openjdk@8
+
+  echo "Building EmptyEpsilon for Android..."
+  if [ ! -f "${EE_BUILD_EE_ANDROID_KEYSTORE}" ]
+  then
+    echo "-   Generating keystore..."
+    keytool -genkey \
+      -noprompt \
+      -alias "${EE_BUILD_EE_ANDROID_KEYSTORE_ALIAS}" \
+      -dname "CN=daid.github.io, OU=EmptyEpsilon, O=EmptyEpsilon, L=None, ST=None, C=None" \
+      -keystore "${EE_BUILD_EE_ANDROID_KEYSTORE}" \
+      -storepass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
+      -keypass "${EE_BUILD_EE_ANDROID_KEYSTORE_PASSWORD}" \
+      -keyalg RSA \
+      -keysize 2048 \
+      -validity 10000 &&
+    echo "!   Keystore generated to ${EE_BUILD_EE_ANDROID_KEYSTORE}."
+  fi
+
+  ( cd "${EE_BUILD_EE}" &&
+    mkdir -p "${EE_BUILD_EE_ANDROID}" &&
+    cd "${EE_BUILD_EE_ANDROID}" &&
+    cmake .. -DSERIOUS_PROTON_DIR="${EE_BUILD_SP}" \
+      -DCMAKE_TOOLCHAIN_FILE="${EE_BUILD_CMAKE}/android.toolchain" \
+      -DCMAKE_MAKE_PROGRAM="${EE_BUILD_MAKE}" \
+      -DCPACK_PACKAGE_VERSION_MAJOR="${EE_BUILD_DATE_YEAR}" \
+      -DCPACK_PACKAGE_VERSION_MINOR="${EE_BUILD_DATE_MONTH}" \
+      -DCPACK_PACKAGE_VERSION_PATCH="${EE_BUILD_DATE_DAY}" &&
+    make -j"${EE_THREADS}" &&
+    echo "!   Android build complete to ${EE_BUILD_EE_ANDROID}/EmptyEpsilon.apk" )
 # Build for macOS.
-( mkdir -p "${EE_BUILD_EE_MACOS}" &&
+else
+  ( mkdir -p "${EE_BUILD_EE_MACOS}" &&
     cd "${EE_BUILD_EE_MACOS}" &&
     echo "Building macOS app to ${EE_BUILD_EE_APP}..." &&
     cmake .. \
@@ -135,3 +184,4 @@ fi
       rm -rf "${EE_BUILD_EE_TEMP_DMG}" "${EE_BUILD_EE_STAGING_DMG}" &&
       echo "!   Temporary image creation files deleted."
     fi )
+fi
