@@ -1,0 +1,32 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x86-Debug (default)",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x86" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "ENABLE_CRASH_LOGGER",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "SERIOUS_PROTON_DIR",
+          "value": "../SeriousProton/",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "SFML_ROOT",
+          "value": "../SFML-2.5.1/",
+          "type": "STRING"
+        }
+      ]
+    }
+  ]
+}
