@@ -16,6 +16,7 @@ EE_BUILD_EE_STAGING_DMG="${EE_BUILD_EE_MACOS}/image_staging"
 EE_BUILD_SP="${EE_BUILD_HOME}/SeriousProton"
 EE_BUILD_DATE="$(date +'%Y%m%d')"
 EE_BUILD_CMAKE="${EE_BUILD_EE}/cmake"
+EE_BUILD_MAKE="/usr/bin/make"
 EE_BUILD="yes"
 EE_UPDATE="yes"
 EE_THREADS="3"
@@ -105,7 +106,10 @@ fi
 if [ "${EE_IS_ANDROID}" == "yes" ]
 then
   # Install OpenJDK 8 from Homebrew; newer versions fail
+  # Another workaround might be
+  # export JAVA_OPTS='-XX:+IgnoreUnrecognizedVMOptions --add-modules java.se.ee'
   brew install openjdk@8
+  PATH="/usr/local/opt/openjdk@8/bin:${PATH}"
 
   echo "Building EmptyEpsilon for Android..."
   if [ ! -f "${EE_BUILD_EE_ANDROID_KEYSTORE}" ]
