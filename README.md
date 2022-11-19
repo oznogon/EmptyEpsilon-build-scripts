@@ -1,3 +1,7 @@
+Deprecated; the EmptyEpsilon uses ninja now, making these unnecessary and outdated.
+
+---
+
 # EmptyEpsilon-build-scripts
 
 Build scripts for Ubuntu and macOS hosts that automatically install or build
