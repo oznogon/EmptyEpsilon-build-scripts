@@ -1,4 +1,4 @@
-Deprecated; the EmptyEpsilon uses ninja now, making these unnecessary and outdated.
+Deprecated; the EmptyEpsilon repo uses ninja now, making these unnecessary and outdated.
 
 ---
 
